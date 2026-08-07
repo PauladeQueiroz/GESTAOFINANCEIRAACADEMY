@@ -294,8 +294,8 @@ svg{display:block;}
 <div class="toast" id="toast"></div>
 <script>
 /* ============ CONFIG — cole os dois valores do seu projeto ============ */
-const SUPABASE_URL = 'COLE_SUA_PROJECT_URL_AQUI';
-const SUPABASE_KEY = 'COLE_SUA_ANON_KEY_AQUI';
+const SUPABASE_URL = 'https://drvffblncshwxrxyenqe.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_yU6vezVEanGOMDhkc3Jsew_nltXd5t8';
 const CONFIG_OK = !/COLE_/.test(SUPABASE_URL) && !/COLE_/.test(SUPABASE_KEY);
 const db = CONFIG_OK ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
