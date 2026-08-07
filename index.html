@@ -294,8 +294,8 @@ svg{display:block;}
 <div class="toast" id="toast"></div>
 <script>
 /* ============ CONFIG — cole os dois valores do seu projeto ============ */
-const SUPABASE_URL = 'https://drvffblncshwxrxyenqe.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_yU6vezVEanGOMDhkc3Jsew_nltXd5t8';
+const SUPABASE_URL = 'COLE_SUA_PROJECT_URL_AQUI';
+const SUPABASE_KEY = 'COLE_SUA_ANON_KEY_AQUI';
 const CONFIG_OK = !/COLE_/.test(SUPABASE_URL) && !/COLE_/.test(SUPABASE_KEY);
 const db = CONFIG_OK ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
@@ -340,6 +340,12 @@ const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','ago
 const DOW=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const initials=n=>(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 
+/* ============ usuário (sem e-mail real) ============ */
+const LOGIN_DOMAIN='vicioverse.local';
+function slugUser(u){return (u||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9._-]/g,'');}
+function usernameToLogin(u){return slugUser(u)+'@'+LOGIN_DOMAIN;}
+function loginToUsername(email){return (email||'').split('@'+LOGIN_DOMAIN)[0]||email||'';}
+
 /* ============ config ============ */
 const TABS=[
   {key:'kanban',label:'Solicitações',sub:'Arraste os cards entre as colunas',icon:'kanban'},
@@ -365,7 +371,7 @@ const r2cat=r=>({id:r.id,name:r.name,color:r.color});
 const r2cc =r=>({id:r.id,name:r.name,code:r.code||''});
 const r2ev =r=>({id:r.id,name:r.name,color:r.color,date:r.date||''});
 const r2emp=r=>({id:r.id,name:r.name,setor:r.setor||'',valor:+r.valor,payDay:r.pay_day,recurEnd:r.recur_end||'',pix:r.pix||''});
-const r2usr=r=>({id:r.id,name:r.name,email:r.email||'',role:r.role,access:r.access||{}});
+const r2usr=r=>({id:r.id,name:r.name,email:r.email||'',username:loginToUsername(r.email||''),role:r.role,access:r.access||{}});
 const r2req=r=>({id:r.id,solicitante:r.solicitante,costCenterId:r.cost_center_id,categoryId:r.category_id,eventId:r.event_id||'',valor:+r.valor,responsavelId:r.responsavel_id,descricao:r.descricao||'',formaPagamento:r.forma_pagamento,tipo:r.tipo,status:r.status,dueDate:r.due_date,paid:r.paid,paidDate:r.paid_date||'',settled:r.settled,comprovante:r.comprovante_path?{name:r.comprovante_name,path:r.comprovante_path}:null,createdAt:r.created_at?new Date(r.created_at).getTime():Date.now()});
 const req2row=q=>({solicitante:q.solicitante,cost_center_id:q.costCenterId||null,category_id:q.categoryId||null,event_id:q.eventId||null,valor:q.valor,responsavel_id:q.responsavelId||null,descricao:q.descricao,forma_pagamento:q.formaPagamento,tipo:q.tipo,status:q.status,due_date:q.dueDate,paid:q.paid,paid_date:q.paidDate||null,settled:q.settled,comprovante_name:q.comprovante?q.comprovante.name:null,comprovante_path:q.comprovante?q.comprovante.path:null});
 
@@ -398,42 +404,44 @@ function showConfig(){
 }
 function showLogin(err){
   showGate(`<div class="gate-card"><div class="glogo">${I('bank')}</div>
-    <h1 class="mont">Gestão Financeira</h1><p class="gmut">Entre com seu e-mail e senha.</p>
-    <div class="field"><label>E-mail</label><input class="inp" id="lgEmail" type="email" placeholder="voce@empresa.com"></div>
-    <div class="field"><label>Senha</label><input class="inp" id="lgPass" type="password" placeholder="senha"></div>
+    <h1 class="mont">Gestão Financeira</h1><p class="gmut">Entre com seu usuário e senha.</p>
+    <div class="field"><label>Usuário</label><input class="inp" id="lgUser" type="text" autocomplete="username" placeholder="ex.: paula"></div>
+    <div class="field"><label>Senha</label><input class="inp" id="lgPass" type="password" autocomplete="current-password" placeholder="senha"></div>
     ${err?`<div class="gerr">${esc(err)}</div>`:''}
     <button class="btn" style="width:100%;justify-content:center;margin-top:4px" data-action="do-login">Entrar</button>
-    <div class="glink">Ainda não tem conta? <button data-action="show-signup">Criar acesso</button></div></div>`);
+    <div class="glink">Primeiro acesso da equipe? <button data-action="show-signup">Criar o primeiro usuário</button></div></div>`);
   const p=$('lgPass');if(p)p.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 }
 function showSignup(err){
   showGate(`<div class="gate-card"><div class="glogo">${I('bank')}</div>
-    <h1 class="mont">Criar acesso</h1><p class="gmut">Use o mesmo e-mail que o admin cadastrou em Usuários.</p>
-    <div class="field"><label>E-mail</label><input class="inp" id="suEmail" type="email" placeholder="voce@empresa.com"></div>
-    <div class="field"><label>Senha</label><input class="inp" id="suPass" type="password" placeholder="mínimo 6 caracteres"></div>
+    <h1 class="mont">Criar usuário</h1><p class="gmut">Sem e-mail, sem confirmação — só usuário e senha. Se você for a primeira pessoa a entrar, vira admin automaticamente.</p>
+    <div class="field"><label>Usuário</label><input class="inp" id="suUser" type="text" autocomplete="username" placeholder="ex.: paula"></div>
+    <div class="field"><label>Senha</label><input class="inp" id="suPass" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></div>
     ${err?`<div class="gerr">${esc(err)}</div>`:''}
-    <button class="btn" style="width:100%;justify-content:center;margin-top:4px" data-action="do-signup">Criar conta</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:4px" data-action="do-signup">Criar</button>
     <div class="glink"><button data-action="show-login">Voltar ao login</button></div></div>`);
 }
 function showNoAccess(user){
   showGate(`<div class="gate-card"><div class="glogo">${I('lock')}</div>
     <h1 class="mont">Acesso ainda não liberado</h1>
-    <p class="gmut">Você entrou como <b>${esc(user.email)}</b>, mas esse e-mail ainda não está em <b>Usuários e acessos</b>. Peça a um admin para te cadastrar com esse mesmo e-mail.</p>
+    <p class="gmut">Você entrou como <b>${esc(loginToUsername(user.email))}</b>, mas esse usuário ainda não está em <b>Usuários e acessos</b>. Peça a um admin para te cadastrar com esse mesmo nome de usuário.</p>
     <button class="btn ghost" style="width:100%;justify-content:center" data-action="logout">Sair</button></div>`);
 }
 async function doLogin(){
-  const email=$('lgEmail').value.trim(),pass=$('lgPass').value;
-  if(!email||!pass){showLogin('Preencha e-mail e senha.');return;}
-  const{data:d,error}=await db.auth.signInWithPassword({email,password:pass});
-  if(error){showLogin('Não foi possível entrar: '+error.message);return;}
+  const user=$('lgUser').value.trim(),pass=$('lgPass').value;
+  if(!user||!pass){showLogin('Preencha usuário e senha.');return;}
+  const{data:d,error}=await db.auth.signInWithPassword({email:usernameToLogin(user),password:pass});
+  if(error){showLogin('Usuário ou senha incorretos.');return;}
   boot(d.user);
 }
 async function doSignup(){
-  const email=$('suEmail').value.trim(),pass=$('suPass').value;
-  if(!email||pass.length<6){showSignup('E-mail válido e senha de 6+ caracteres.');return;}
-  const{data:d,error}=await db.auth.signUp({email,password:pass});
+  const user=$('suUser').value.trim(),pass=$('suPass').value;
+  if(!user||user.length<3){showSignup('Escolha um usuário com pelo menos 3 letras.');return;}
+  if(!pass||pass.length<6){showSignup('A senha precisa ter 6 ou mais caracteres.');return;}
+  const{data:d,error}=await db.auth.signUp({email:usernameToLogin(user),password:pass});
   if(error){showSignup('Erro: '+error.message);return;}
-  if(d.session){boot(d.user);}else{showLogin('Conta criada! Se pedir confirmação, verifique seu e-mail e depois entre.');}
+  if(d.session){boot(d.user);}
+  else{showLogin('Conta criada! Se não conseguir entrar, peça para um admin desligar "Confirm email" nas configurações do Supabase.');}
 }
 async function logout(){await db.auth.signOut();currentUser=null;showLogin();}
 
@@ -630,12 +638,41 @@ function renderUsuarios(c){
   c.innerHTML=`${!admin?`<div class="panel" style="color:var(--ink-3)">Apenas admins gerenciam usuários e acessos.</div>`:''}
   ${data.users.map(u=>`<div class="user-card"><div class="user-head"><span class="avatar" style="width:34px;height:34px;font-size:13px">${initials(u.name)}</span>
     <div style="flex:1"><div style="font-weight:700;font-size:15px" ${admin?'contenteditable data-action="rename-user"':''} data-id="${u.id}">${esc(u.name)}</div>
-      <div class="meta" ${admin?'contenteditable data-action="rename-email"':''} data-id="${u.id}" style="font-size:12px;color:var(--ink-3)">${esc(u.email||'sem e-mail')}</div></div>
+      <div class="meta" style="font-size:12px;color:var(--ink-3)">usuário: <b style="color:var(--ink-2)">${esc(u.username||'—')}</b></div></div>
     <button class="role ${u.role==='admin'?'admin':'solic'}" ${admin?`data-action="toggle-role" data-id="${u.id}"`:''}>${u.role==='admin'?'Admin':'Solicitante'}</button>
     ${admin&&data.users.length>1?`<button class="icon-btn del" data-action="del-user" data-id="${u.id}">${I('trash')}</button>`:''}</div>
     <div class="access-grid">${ACCESS_KEYS.map(([k,lb])=>`<label class="chk"><input type="checkbox" ${u.access[k]?'checked':''} ${admin?`data-action="toggle-access" data-id="${u.id}" data-k="${k}"`:'disabled'}><span class="box">${I('check')}</span>${lb}</label>`).join('')}</div></div>`).join('')}
-    ${admin?`<div class="add-inline"><input id="newUserName" placeholder="Nome" maxlength="40"><input id="newUserEmail" placeholder="e-mail (o mesmo do login)" maxlength="60" type="email"><button class="btn" data-action="add-user">${I('plus')}Adicionar usuário</button></div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:8px">Cadastre a pessoa com o mesmo e-mail que ela vai usar para entrar. Ela cria a senha em "Criar acesso" na tela de login (ou você cria em Authentication no Supabase).</p>`:''}`;
+    ${admin?`<button class="btn" data-action="new-user" style="margin-top:6px">${I('plus')}Criar usuário e senha</button>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:8px">Você define o usuário e a senha da pessoa aqui mesmo — sem e-mail, sem confirmação. Depois é só avisar as duas informações a ela.</p>`:''}`;
+}
+function openNewUser(){
+  $('overlay').innerHTML=`<div class="modal sm"><div class="modal-h"><h2 class="mont">Criar usuário e senha</h2><button class="x" data-action="close">${I('x')}</button></div>
+  <div class="modal-body">
+    <div class="field"><label>Nome</label><input class="inp" id="nuName" placeholder="Nome da pessoa"></div>
+    <div class="field"><label>Usuário (login)</label><input class="inp" id="nuUser" placeholder="ex.: joao" autocomplete="off"></div>
+    <div class="field"><label>Senha</label><input class="inp" id="nuPass" type="text" placeholder="mínimo 6 caracteres" autocomplete="off"></div>
+    <div class="field"><label>Papel</label><select class="sel" id="nuRole"><option value="solicitante">Solicitante</option><option value="admin">Admin</option></select></div>
+    <div class="modal-foot"><button class="btn ghost" data-action="close">Cancelar</button><button class="btn" data-action="save-new-user">Criar</button></div></div></div>`;
+  $('overlay').classList.add('show');
+}
+async function saveNewUser(){
+  const name=$('nuName').value.trim(),user=$('nuUser').value.trim(),pass=$('nuPass').value,role=$('nuRole').value;
+  if(!name){toast('Informe o nome');return;}
+  if(!user||user.length<3){toast('Usuário precisa ter 3+ letras');return;}
+  if(!pass||pass.length<6){toast('Senha precisa ter 6+ caracteres');return;}
+  const login=usernameToLogin(user);
+  if(data.users.some(u=>(u.email||'').toLowerCase()===login)){toast('Já existe um usuário com esse login');return;}
+  // cria o login sem derrubar a sessão atual: cliente auth separado e descartável
+  const tempClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sb-temp-'+Date.now()+Math.random(),persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const{error}=await tempClient.auth.signUp({email:login,password:pass});
+  if(error){toast('Erro ao criar login: '+error.message);return;}
+  const acc={};ACCESS_KEYS.forEach(k=>acc[k[0]]=role==='admin'?true:k[0]==='cadastrar');
+  try{
+    const row=await dbInsert('app_users',{name,email:login,role,access:acc});
+    data.users.push(r2usr(row));
+    closeModal();render();
+    toast('Usuário criado — avise o login e a senha para a pessoa');
+  }catch(e){/* dbInsert já mostra o toast de erro */}
 }
 function renderRelatorio(c){
   const total=data.requests.reduce((s,r)=>s+(+r.valor||0),0);
@@ -739,7 +776,8 @@ async function onClick(e){
   if(a==='del-cat'){if(data.requests.some(r=>r.categoryId===id)&&!confirm('Há solicitações nessa categoria. Remover mesmo assim?'))return;await dbDelete('categories',id);data.categories=data.categories.filter(c=>c.id!==id);render();return;}
   if(a==='add-cc'){const v=$('newCcName').value.trim();if(!v)return;const row=await dbInsert('cost_centers',{name:v,code:$('newCcCode').value.trim()||null});data.costCenters.push(r2cc(row));render();return;}
   if(a==='del-cc'){if(data.requests.some(r=>r.costCenterId===id)&&!confirm('Há solicitações nesse centro de custo. Remover mesmo assim?'))return;await dbDelete('cost_centers',id);data.costCenters=data.costCenters.filter(c=>c.id!==id);render();return;}
-  if(a==='add-user'){const v=$('newUserName').value.trim(),em=$('newUserEmail').value.trim().toLowerCase();if(!v){toast('Informe o nome');return;}const acc={};ACCESS_KEYS.forEach(k=>acc[k[0]]=k[0]==='cadastrar');const row=await dbInsert('app_users',{name:v,email:em||null,role:'solicitante',access:acc});data.users.push(r2usr(row));render();return;}
+  if(a==='new-user'){openNewUser();return;}
+  if(a==='save-new-user'){saveNewUser();return;}
   if(a==='del-user'){await dbDelete('app_users',id);data.users=data.users.filter(u=>u.id!==id);render();return;}
   if(a==='toggle-role'){const u=usr(id);u.role=u.role==='admin'?'solicitante':'admin';await dbUpdate('app_users',id,{role:u.role});render();return;}
   if(a==='toggle-access'){const u=usr(id);u.access={...u.access,[el.dataset.k]:el.checked};await dbUpdate('app_users',id,{access:u.access});if(id===currentUserId){currentUser=u;render();}return;}
@@ -749,7 +787,6 @@ document.addEventListener('blur',async e=>{const el=e.target;if(!el.dataset)retu
   if(a==='rename-cat'){const c=cat(id);c.name=el.textContent.trim()||c.name;await dbUpdate('categories',id,{name:c.name});}
   if(a==='rename-cc'){const c=cc(id);c.name=el.textContent.trim()||c.name;await dbUpdate('cost_centers',id,{name:c.name});}
   if(a==='rename-user'){const u=usr(id);u.name=el.textContent.trim()||u.name;await dbUpdate('app_users',id,{name:u.name});}
-  if(a==='rename-email'){const u=usr(id);const em=el.textContent.trim().replace(/^sem e-mail$/,'');u.email=em;await dbUpdate('app_users',id,{email:em||null});}
 },true);
 document.addEventListener('input',async e=>{const el=e.target;if(el.dataset&&el.dataset.action==='recolor-cat'){const c=cat(el.dataset.id);c.color=el.value;await dbUpdate('categories',el.dataset.id,{color:el.value});}});
 async function saveRequest(){
